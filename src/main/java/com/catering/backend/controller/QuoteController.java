@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.catering.backend.dto.QuoteDTO;
 import com.catering.backend.service.QuoteService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/quotes")
 public class QuoteController {
@@ -22,7 +24,7 @@ public class QuoteController {
      * URL: http://localhost:8080/api/quotes
      */
     @PostMapping
-    public ResponseEntity<?> requestQuote(@RequestBody QuoteDTO quoteDTO) {
+    public ResponseEntity<?> requestQuote(@Valid @RequestBody QuoteDTO quoteDTO) {
         try {
             quoteService.createQuote(quoteDTO);
             return ResponseEntity.ok().body("{\"message\": \"Cotización enviada con éxito\"}");
