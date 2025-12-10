@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.catering.backend.dto.ProductRequestDTO;
+import com.catering.backend.entity.Category;
 import com.catering.backend.entity.Product;
+import com.catering.backend.repository.CategoryRepository;
 import com.catering.backend.repository.ProductRepository;
 
 @RestController
@@ -22,32 +25,42 @@ public class ProductController {
     @Autowired
     private ProductRepository productRepository;
 
-    // LEER (Ya lo tenías)
+    @Autowired
+    private CategoryRepository categoryRepository; // Inyectamos el nuevo repo
+
+    // LEER (GET)
     @GetMapping
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
 
-    // LEER POR CATEGORÍA (Ya lo tenías)
-    @GetMapping("/category/{category}")
-    public List<Product> getByCategory(@PathVariable String category) {
-        return productRepository.findByCategory(category);
-    }
-
-    // --- NUEVO: CREAR PRODUCTO ---
+    // CREAR (POST) - ¡MÉTODO ACTUALIZADO!
     @PostMapping
-    public Product createProduct(@RequestBody Product product) {
-        return productRepository.save(product);
+    public ResponseEntity<?> createProduct(@RequestBody ProductRequestDTO dto) {
+        // 1. Buscamos la categoría en la BD por su nombre
+        Category category = categoryRepository.findByName(dto.category())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada: " + dto.category()));
+
+        // 2. Creamos el producto y asignamos la relación
+        Product product = new Product();
+        product.setName(dto.name());
+        product.setDescription(dto.description());
+        product.setImageUrl(dto.imageUrl());
+        product.setPrice(dto.price());
+        product.setCategory(category); // Aquí guardamos el objeto Category real
+
+        // 3. Guardamos
+        Product savedProduct = productRepository.save(product);
+        return ResponseEntity.ok(savedProduct);
     }
 
-    // --- NUEVO: BORRAR PRODUCTO ---
+    // BORRAR (DELETE)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
-        return productRepository.findById(id)
-                .map(product -> {
-                    productRepository.delete(product);
-                    return ResponseEntity.ok().build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        if (!productRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        productRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }
